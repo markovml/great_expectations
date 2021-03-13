@@ -209,6 +209,66 @@ def test_OpsgenieAlertAction(
     )
 
 
+@pytest.mark.parametrize(
+    (
+    "request_type",
+    "response_value",
+    "expected_response",
+    "data_context_parameterized_expectation_suite",
+    "validation_result_suite",
+    "validation_result_suite_extended_id",
+    ),
+    [ ("post", 200, "Microsoft Teams notification succeeded.", None, None, None),
+      ("post", 400, None, None, None, None)],
+    indirect=[
+        "data_context_parameterized_expectation_suite",
+        "validation_result_suite",
+        "validation_result_suite_extended_id",
+    ],
+    scope="module",
+)
+def test_MicrosoftTeamsNotificationAction_both_request(
+    request_type,
+    response_value,
+    expected_response,
+    data_context_parameterized_expectation_suite,
+    validation_result_suite,
+    validation_result_suite_extended_id,
+):
+    with mock.patch.object(
+        Session,
+        request_type,
+        response_value,
+        return_value=MockTeamsResponse(200)
+    ):
+        renderer = {
+            "module_name": "great_expectations.render.renderer.microsoft_teams_renderer",
+            "class_name": "MicrosoftTeamsRenderer",
+        }
+        teams_webhook = "http://testing"
+        notify_on = "all"
+        teams_action = MicrosoftTeamsNotificationAction(
+            data_context=data_context_parameterized_expectation_suite,
+            renderer=renderer,
+            microsoft_teams_webhook=teams_webhook,
+            notify_on=notify_on,
+        )
+
+        print("THIS IS WORKING?!")
+        print(response_value)
+
+
+        # validation_result_suite is None
+        assert (
+                teams_action.run(
+                    validation_result_suite_identifier=validation_result_suite_extended_id,
+                    validation_result_suite=None,
+                    data_asset=None,
+                )
+                is {"microsoft_teams_notification_result": expected_response}
+        )
+
+
 @mock.patch.object(Session, "post", return_value=MockTeamsResponse(200))
 def test_MicrosoftTeamsNotificationAction_good_request(
     data_context_parameterized_expectation_suite,
